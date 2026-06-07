@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Critical Blind Spot Monitoring System (Angles Morts)</title>
+  </head>
+  <body>
+    <!-- Screen Overlays for styling -->
+    <div class="crt-overlay"></div>
+    <div class="crt-vignette"></div>
+    <div class="radar-scan-line"></div>
+
+    <!-- 3D Render Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Interactive HUD Overlay -->
+    <div class="hud-layer">
+      <!-- HEADER -->
+      <header class="hud-header">
+        <div class="header-title">
+          <h1>CRITICAL BLIND SPOT SYSTEM</h1>
+          <span>ANGLES MORTS SAFETY INTERFACE — CLASS AIS-186 LORRY</span>
+        </div>
+        <div class="system-status">
+          <button id="audio-toggle" class="audio-mute-btn" title="Toggle Alarm Sound">
+            🔊
+          </button>
+          <div class="status-node">
+            <span id="system-status-indicator" class="status-indicator"></span>
+            <span id="system-status-text">SYSTEM ACTIVE</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Floating HUD Toggle Buttons -->
+      <button id="toggle-left-hud" class="hud-toggle-btn left-btn" title="Toggle Telemetry Panel">
+        <span class="btn-icon">📊</span>
+      </button>
+      <button id="toggle-right-hud" class="hud-toggle-btn right-btn" title="Toggle Settings Panel">
+        <span class="btn-icon">⚙️</span>
+      </button>
+
+      <!-- LEFT SIDEBAR: Telemetry & Safety Zones -->
+      <aside class="hud-panel left-sidebar collapsed">
+        <div>
+          <h2 class="section-title">Target Telemetry</h2>
+          <div class="telemetry-display">
+            <div class="telemetry-row">
+              <span class="telemetry-label">TARGET CLASSIFICATION</span>
+              <span id="tele-class" class="telemetry-value" style="color: #ffff00;">AUTO RICKSHAW</span>
+            </div>
+            <div class="telemetry-row">
+              <span class="telemetry-label">RANGE (DISTANCE)</span>
+              <span id="tele-range" class="telemetry-value">--</span>
+            </div>
+            <div class="telemetry-row">
+              <span class="telemetry-label">RELATIVE SPEED</span>
+              <span id="tele-speed" class="telemetry-value">--</span>
+            </div>
+            <div class="telemetry-row">
+              <span class="telemetry-label">EST. TIME-TO-COLLISION</span>
+              <span id="tele-ttc" class="telemetry-value">--</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 15px; flex-grow: 1; display: flex; flex-direction: column;">
+          <h2 class="section-title">Safety Sector Status</h2>
+          <div class="sensor-grid" id="sensor-grid-list">
+            <!-- Angles Morts Left -->
+            <div class="sensor-card" id="card-LEFT">
+              <span class="sensor-name">ANGLES MORTS LEFT (L)</span>
+              <span class="sensor-state safe" id="state-LEFT">SECURE</span>
+            </div>
+            <!-- Angles Morts Right -->
+            <div class="sensor-card" id="card-RIGHT">
+              <span class="sensor-name">ANGLES MORTS RIGHT (R)</span>
+              <span class="sensor-state safe" id="state-RIGHT">SECURE</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- CENTER: Live Warning Banners -->
+      <main class="center-area">
+        <div id="alert-banner" class="alert-banner">
+          <span class="alert-icon">⚠</span>
+          <span id="alert-message">WARNING: TARGET IN LEFT BLIND SPOT</span>
+        </div>
+      </main>
+
+      <!-- RIGHT SIDEBAR: Controls -->
+      <aside class="hud-panel right-sidebar collapsed">
+        <div>
+          <h2 class="section-title">Simulation Settings</h2>
+          
+          <div class="control-group" style="margin-bottom: 15px;">
+            <label for="target-type-select">Target Classification</label>
+            <select id="target-type-select" class="btn-preset" style="width: 100%; border-radius: 4px; padding: 10px; background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); color: #fff; cursor: pointer; font-family: var(--font-mono); outline: none;">
+              <option value="rickshaw" style="background: var(--bg-primary); color: #fff;">Auto Rickshaw</option>
+              <option value="motorcycle" style="background: var(--bg-primary); color: #fff;">Motorcycle</option>
+              <option value="bicycle" style="background: var(--bg-primary); color: #fff;">Bicycle</option>
+              <option value="pedestrian" style="background: var(--bg-primary); color: #fff;">Pedestrian (Walking)</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label>Target Path Presets</label>
+            <button id="path-orbit" class="btn-preset active">Orbit (Lateral Zones)</button>
+            <button id="path-overtake-left" class="btn-preset">Overtake Left</button>
+            <button id="path-overtake-right" class="btn-preset">Overtake Right</button>
+            <button id="path-manual" class="btn-preset">Manual Control (Drag)</button>
+          </div>
+
+          <div class="control-group" style="margin-top: 12px;">
+            <label>Lorry Speed (Danger Zone Bounds)</label>
+            <div class="slider-container">
+              <input type="range" id="lorry-speed" min="0" max="100" step="5" value="0">
+              <span id="lorry-speed-label" style="min-width: 65px; text-align: right;">0 km/h</span>
+            </div>
+          </div>
+
+          <div class="control-group" style="margin-top: 10px;">
+            <label>Blinker Switch</label>
+            <div style="display: flex; gap: 8px;">
+              <button id="blinker-left" class="btn-preset btn-blinker" style="flex: 1; justify-content: center;">◀ Left</button>
+              <button id="blinker-off" class="btn-preset btn-blinker active" style="flex: 1; justify-content: center;">Off</button>
+              <button id="blinker-right" class="btn-preset btn-blinker" style="flex: 1; justify-content: center;">Right ▶</button>
+            </div>
+          </div>
+
+          <div class="control-group" style="margin-top: 10px;">
+            <label>Steering Wheel Angle</label>
+            <div class="slider-container">
+              <input type="range" id="steering-angle" min="-45" max="45" step="5" value="0">
+              <span id="steering-label" style="min-width: 40px; text-align: right;">0°</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 15px;">
+          <div class="control-group">
+            <label>Simulation Speed</label>
+            <div class="slider-container">
+              <input type="range" id="sim-speed" min="0" max="2.5" step="0.1" value="1.0">
+              <span id="speed-label" style="min-width: 35px; text-align: right;">1.0x</span>
+            </div>
+          </div>
+          
+          <button id="sim-play-pause" class="btn-primary">Pause Simulation</button>
+        </div>
+      </aside>
+
+      <!-- FOOTER: Instructions & Cameras -->
+      <footer class="hud-footer">
+        <div class="instructions-panel">
+          <p id="instruction-text">
+            💡 <strong>Preset Orbit Mode:</strong> The Auto-Rickshaw moves autonomously through the blind spots. Drag the screen with <span class="key-tag">Left Click</span> to rotate, <span class="key-tag">Right Click</span> to pan, and <span class="key-tag">Scroll</span> to zoom.
+          </p>
+        </div>
+        <div class="camera-controls">
+          <button id="cam-orbit" class="btn-camera active">Free Orbit</button>
+          <button id="cam-radar" class="btn-camera">Top Radar</button>
+          <button id="cam-morts" class="btn-camera">Angles Morts</button>
+          <button id="cam-mirror" class="btn-camera">Driver Mirror</button>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
