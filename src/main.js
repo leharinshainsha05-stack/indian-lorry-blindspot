@@ -20,6 +20,7 @@ let dragPlane;
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let isDragging = false;
+let lastWidth = window.innerWidth;
 
 // Audio variables
 let audioCtx = null;
@@ -845,12 +846,37 @@ function setupEventListeners() {
   const toggleLeftBtn = document.getElementById("toggle-left-hud");
   const toggleRightBtn = document.getElementById("toggle-right-hud");
 
+  // Initialize sidebars state based on screen size on load
+  if (window.innerWidth >= 1024) {
+    leftHud.classList.remove("collapsed");
+    toggleLeftBtn.classList.add("active");
+    rightHud.classList.remove("collapsed");
+    toggleRightBtn.classList.add("active");
+  } else {
+    leftHud.classList.add("collapsed");
+    toggleLeftBtn.classList.remove("active");
+    rightHud.classList.add("collapsed");
+    toggleRightBtn.classList.remove("active");
+  }
+
   toggleLeftBtn.addEventListener('click', () => {
+    const isOpening = leftHud.classList.contains("collapsed");
+    if (isOpening && window.innerWidth < 1024) {
+      // Close the opposite sidebar on tablet/mobile to preserve space
+      rightHud.classList.add("collapsed");
+      toggleRightBtn.classList.remove("active");
+    }
     leftHud.classList.toggle("collapsed");
     toggleLeftBtn.classList.toggle("active");
   });
 
   toggleRightBtn.addEventListener('click', () => {
+    const isOpening = rightHud.classList.contains("collapsed");
+    if (isOpening && window.innerWidth < 1024) {
+      // Close the opposite sidebar on tablet/mobile to preserve space
+      leftHud.classList.add("collapsed");
+      toggleLeftBtn.classList.remove("active");
+    }
     rightHud.classList.toggle("collapsed");
     toggleRightBtn.classList.toggle("active");
   });
@@ -897,6 +923,37 @@ function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+
+  // Auto expand/collapse sidebars if window size crosses the 1024px boundary
+  const currentWidth = window.innerWidth;
+  if (lastWidth >= 1024 && currentWidth < 1024) {
+    // Transitioning from desktop to tablet/mobile: collapse both
+    const leftHud = document.querySelector(".left-sidebar");
+    const rightHud = document.querySelector(".right-sidebar");
+    const toggleLeftBtn = document.getElementById("toggle-left-hud");
+    const toggleRightBtn = document.getElementById("toggle-right-hud");
+    
+    if (leftHud && rightHud && toggleLeftBtn && toggleRightBtn) {
+      leftHud.classList.add("collapsed");
+      toggleLeftBtn.classList.remove("active");
+      rightHud.classList.add("collapsed");
+      toggleRightBtn.classList.remove("active");
+    }
+  } else if (lastWidth < 1024 && currentWidth >= 1024) {
+    // Transitioning from tablet/mobile to desktop: expand both
+    const leftHud = document.querySelector(".left-sidebar");
+    const rightHud = document.querySelector(".right-sidebar");
+    const toggleLeftBtn = document.getElementById("toggle-left-hud");
+    const toggleRightBtn = document.getElementById("toggle-right-hud");
+
+    if (leftHud && rightHud && toggleLeftBtn && toggleRightBtn) {
+      leftHud.classList.remove("collapsed");
+      toggleLeftBtn.classList.add("active");
+      rightHud.classList.remove("collapsed");
+      toggleRightBtn.classList.add("active");
+    }
+  }
+  lastWidth = currentWidth;
 }
 
 // Start app

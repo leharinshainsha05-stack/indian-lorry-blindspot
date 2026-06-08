@@ -628,24 +628,272 @@ footer.hud-footer {
   100% { transform: translateY(100%); }
 }
 
-/* Responsive adjustments */
-@media (max-width: 900px) {
+/* --- RESPONSIVE MEDIA QUERIES (XS, S, M, L, XL BREAKPOINTS) --- */
+
+/* 1. Extra Large Screens (XL - Width >= 1440px) */
+@media (min-width: 1440px) {
+  .hud-layer {
+    grid-template-columns: 340px 1fr 340px;
+    padding: 30px;
+    gap: 30px;
+  }
+  .header-title h1 {
+    font-size: 1.6rem;
+    letter-spacing: 3px;
+  }
+  .header-title span {
+    font-size: 0.85rem;
+  }
+  .left-sidebar {
+    width: 340px;
+    left: 30px;
+    top: 178px;
+    max-height: calc(100vh - 300px);
+  }
+  .left-sidebar.collapsed {
+    transform: translateX(-390px);
+  }
+  .right-sidebar {
+    width: 340px;
+    right: 30px;
+    top: 178px;
+    max-height: calc(100vh - 300px);
+  }
+  .right-sidebar.collapsed {
+    transform: translateX(390px);
+  }
+  .hud-toggle-btn.left-btn {
+    left: 30px;
+    top: 110px;
+  }
+  .hud-toggle-btn.right-btn {
+    right: 30px;
+    top: 110px;
+  }
+  .alert-banner {
+    font-size: 1.25rem;
+    padding: 14px 35px;
+  }
+}
+
+/* 2. Large Screens (L - Default styles apply, 1024px to 1439px) */
+/* (We don't need overrides for L since the default styles are tailored for L) */
+
+/* 3. Medium Screens (M - Width < 1024px) */
+@media (max-width: 1023px) {
   .hud-layer {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto;
     grid-template-areas: 
       "header"
-      "left-sidebar"
-      "right-sidebar"
+      "center-area"
       "footer";
-    overflow-y: auto;
-    pointer-events: auto;
+    padding: 15px;
+    gap: 15px;
   }
-  .hud-panel {
-    pointer-events: auto;
+  .left-sidebar {
+    width: 300px;
+    left: 15px;
+    top: 168px;
+    max-height: calc(100vh - 270px);
   }
-  body {
-    overflow-y: auto;
+  .left-sidebar.collapsed {
+    transform: translateX(-340px);
+  }
+  .right-sidebar {
+    width: 300px;
+    right: 15px;
+    top: 168px;
+    max-height: calc(100vh - 270px);
+  }
+  .right-sidebar.collapsed {
+    transform: translateX(340px);
+  }
+  .hud-toggle-btn.left-btn {
+    left: 15px;
+    top: 100px;
+  }
+  .hud-toggle-btn.right-btn {
+    right: 15px;
+    top: 100px;
+  }
+  .alert-banner {
+    font-size: 1rem;
+    padding: 10px 20px;
+  }
+}
+
+/* 4. Small Screens (S - Width < 768px) */
+@media (max-width: 767px) {
+  .hud-layer {
+    grid-template-rows: 60px 1fr auto;
+    padding: 12px;
+    gap: 12px;
+  }
+  header.hud-header {
+    padding: 0 10px;
+  }
+  .header-title h1 {
+    font-size: 1.05rem;
+    letter-spacing: 1px;
+  }
+  .header-title span {
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+  }
+  .left-sidebar {
+    width: 280px;
+    left: 12px;
+    top: 140px;
+    max-height: calc(100vh - 230px);
+  }
+  .left-sidebar.collapsed {
+    transform: translateX(-310px);
+  }
+  .right-sidebar {
+    width: 280px;
+    right: 12px;
+    top: 140px;
+    max-height: calc(100vh - 230px);
+  }
+  .right-sidebar.collapsed {
+    transform: translateX(310px);
+  }
+  .hud-toggle-btn.left-btn {
+    left: 12px;
+    top: 80px;
+    width: 44px;
+    height: 44px;
+  }
+  .hud-toggle-btn.right-btn {
+    right: 12px;
+    top: 80px;
+    width: 44px;
+    height: 44px;
+  }
+  .hud-toggle-btn .btn-icon {
+    font-size: 1.1rem;
+  }
+  footer.hud-footer {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .instructions-panel {
+    font-size: 0.75rem;
+    padding: 8px 12px;
+  }
+  .camera-controls {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    width: 100%;
+  }
+  .camera-controls .btn-camera {
+    padding: 8px;
+    font-size: 0.75rem;
+    justify-content: center;
+  }
+}
+
+/* 5. Extra Small Screens (XS - Width < 480px) */
+@media (max-width: 479px) {
+  .hud-layer {
+    grid-template-rows: auto 1fr auto;
+    padding: 8px;
+    gap: 8px;
+  }
+  header.hud-header {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    height: auto;
+    padding: 8px 6px;
+  }
+  .header-title {
+    text-align: center;
+  }
+  .header-title h1 {
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+  }
+  .header-title span {
+    display: none; /* Hide subtitle to maximize vertical screen space */
+  }
+  .system-status {
+    gap: 8px;
+  }
+  .status-node {
+    font-size: 0.8rem;
+  }
+  .hud-toggle-btn.left-btn {
+    left: 8px;
+    top: 90px;
+    width: 38px;
+    height: 38px;
+  }
+  .hud-toggle-btn.right-btn {
+    right: 8px;
+    top: 90px;
+    width: 38px;
+    height: 38px;
+  }
+  .hud-toggle-btn .btn-icon {
+    font-size: 0.95rem;
+  }
+  .left-sidebar {
+    width: 100vw;
+    left: 0;
+    top: 135px;
+    height: calc(100vh - 135px);
+    max-height: calc(100vh - 135px);
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    padding: 12px;
+  }
+  .left-sidebar.collapsed {
+    transform: translateX(-100vw);
+  }
+  .right-sidebar {
+    width: 100vw;
+    right: 0;
+    top: 135px;
+    height: calc(100vh - 135px);
+    max-height: calc(100vh - 135px);
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    padding: 12px;
+  }
+  .right-sidebar.collapsed {
+    transform: translateX(100vw);
+  }
+  .alert-banner {
+    font-size: 0.78rem;
+    padding: 6px 12px;
+    letter-spacing: 0px;
+    text-align: center;
+    gap: 8px;
+  }
+  .alert-icon {
+    font-size: 1.1rem;
+  }
+  .instructions-panel {
+    font-size: 0.7rem;
+    padding: 6px 8px;
+  }
+  .camera-controls {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+  .camera-controls .btn-camera {
+    padding: 6px;
+    font-size: 0.7rem;
+    justify-content: center;
   }
 }
 
