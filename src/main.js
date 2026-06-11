@@ -160,7 +160,7 @@ function init() {
   dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
   // 10. Simulation logic integration
-  simulation = new BlindSpotSimulation(lorry, targetGroup);
+  simulation = new BlindSpotSimulation(lorry, targetGroup, targetsMap);
 
   // Setup Event Listeners
   setupEventListeners();
@@ -176,9 +176,9 @@ function init() {
     // Update simulation
     simulation.update(deltaTime);
 
-    // Animate pedestrian walking if active and moving
-    if (activeTargetKey === "pedestrian" && pedestrianModel && pedestrianModel.tick) {
-      const isMoving = simulation.isPlaying && simulation.activeTrajectory !== "manual";
+    // Animate pedestrian walking
+    if (pedestrianModel && pedestrianModel.tick) {
+      const isMoving = simulation.isPlaying && (simulation.activeTrajectory === "highway" || (activeTargetKey === "pedestrian" && simulation.activeTrajectory !== "manual"));
       pedestrianModel.tick(simulation.time, isMoving);
     }
     
@@ -388,19 +388,25 @@ function createBlindSpotMeshes() {
  * Updates the 3D laser pointer connecting the truck's front sensor to the rickshaw
  */
 function updateTrackingLine() {
-  const rx = targetGroup.position.x;
-  const rz = targetGroup.position.z;
+  let tx = targetGroup.position.x;
+  let tz = targetGroup.position.z;
   
-  // Connect sensor at (0, 0.8, 2.4) [Lorry Cab center-ish] to Target (rx, 0.8, rz)
+  if (simulation && simulation.activeTrajectory === "highway") {
+    const criticalKey = simulation.telemetry.mostCriticalTargetKey || "rickshaw";
+    const model = targetsMap[criticalKey].model;
+    tx = model.position.x;
+    tz = model.position.z;
+  }
+  
   const positions = trackingLine.geometry.attributes.position.array;
   
   positions[0] = 0;
   positions[1] = 0.8;
   positions[2] = 2.4;
   
-  positions[3] = rx;
+  positions[3] = tx;
   positions[4] = 0.8;
-  positions[5] = rz;
+  positions[5] = tz;
   
   trackingLine.geometry.attributes.position.needsUpdate = true;
 }
@@ -475,6 +481,11 @@ function updateUI() {
   // 1. Text Telemetry
   teleRange.textContent = data.range + " cm";
   
+  if (simulation.activeTrajectory === "highway") {
+    const criticalKey = data.mostCriticalTargetKey || "rickshaw";
+    document.getElementById("tele-class").textContent = targetsMap[criticalKey].name;
+  }
+  
   if (simulation.activeTrajectory === "manual") {
     teleSpeed.textContent = "MANUAL";
     teleTtc.textContent = data.ttc;
@@ -545,7 +556,29 @@ function updateUI() {
   }
 
   // Bounding Box and dynamic lines highlight
-  const activeModel = targetsMap[activeTargetKey].model;
+  let activeModel;
+  if (simulation.activeTrajectory === "highway") {
+    const criticalKey = data.mostCriticalTargetKey || "rickshaw";
+    activeModel = targetsMap[criticalKey].model;
+    
+    Object.keys(targetsMap).forEach(k => {
+      const model = targetsMap[k].model;
+      const bbox = model.getObjectByName("TargetBoundingBox");
+      const brackets = model.getObjectByName("TargetBrackets");
+      if (bbox) bbox.visible = (k === criticalKey);
+      if (brackets) brackets.visible = (k === criticalKey);
+    });
+  } else {
+    activeModel = targetsMap[activeTargetKey].model;
+    Object.keys(targetsMap).forEach(k => {
+      const model = targetsMap[k].model;
+      const bbox = model.getObjectByName("TargetBoundingBox");
+      const brackets = model.getObjectByName("TargetBrackets");
+      if (bbox) bbox.visible = (k === activeTargetKey);
+      if (brackets) brackets.visible = (k === activeTargetKey);
+    });
+  }
+
   const targetBBox = activeModel.getObjectByName("TargetBoundingBox");
   const targetBrackets = activeModel.getObjectByName("TargetBrackets");
 
@@ -726,6 +759,8 @@ function onPointerUp() {
  * Handles HUD buttons and Camera positioning
  */
 function setupEventListeners() {
+  const targetSelect = document.getElementById("target-type-select");
+
   // Window Resize
   window.addEventListener('resize', onWindowResize);
 
@@ -757,7 +792,7 @@ function setupEventListeners() {
   });
 
   // Preset Paths Toggles
-  const paths = ["orbit", "overtake-left", "overtake-right", "manual"];
+  const paths = ["orbit", "overtake-left", "overtake-right", "highway", "manual"];
   paths.forEach(p => {
     const btn = document.getElementById(`path-${p}`);
     btn.addEventListener('click', () => {
@@ -776,10 +811,61 @@ function setupEventListeners() {
         const textMap = {
           "orbit": "💡 <strong>Preset Orbit Mode:</strong> The Auto-Rickshaw moves autonomously through the lateral blind spots. Drag the screen with <span class='key-tag'>Left Click</span> to rotate, <span class='key-tag'>Right Click</span> to pan, and <span class='key-tag'>Scroll</span> to zoom.",
           "overtake-left": "💡 <strong>Overtake Left:</strong> Simulates a hazardous left-hand blind spot pass. Watch how the target enters the lateral Left blind spot.",
-          "overtake-right": "💡 <strong>Overtake Right:</strong> Simulates an overtaking maneuver on the right side cab lane."
+          "overtake-right": "💡 <strong>Overtake Right:</strong> Simulates an overtaking maneuver on the right side cab lane.",
+          "highway": "💡 <strong>Highway Flow:</strong> Simulates a busy highway environment. Multiple vehicles (Rickshaw, Motorcycle, Bicycle, and Pedestrian) pass the lorry simultaneously. Sensors monitor both sides and dynamically track the highest-threat vehicle."
         };
         instructionText.innerHTML = textMap[p];
         simPlayPauseBtn.style.display = "block";
+      }
+
+      // Manage dropdown and visibility transitions
+      if (p === "highway") {
+        // Show all models
+        Object.keys(targetsMap).forEach(k => {
+          targetsMap[k].model.visible = true;
+          targetsMap[k].model.position.set(0, 0, 0);
+          targetsMap[k].model.rotation.y = 0;
+          
+          const bbox = targetsMap[k].model.getObjectByName("TargetBoundingBox");
+          const brackets = targetsMap[k].model.getObjectByName("TargetBrackets");
+          if (bbox) bbox.visible = true;
+          if (brackets) brackets.visible = true;
+        });
+        
+        // Disable dropdown select
+        targetSelect.disabled = true;
+        
+        // Add Multiple (Highway Flow) option if not already present
+        if (!document.getElementById("opt-multiple")) {
+          const opt = document.createElement("option");
+          opt.value = "multiple";
+          opt.text = "Multiple (Highway Flow)";
+          opt.id = "opt-multiple";
+          targetSelect.add(opt);
+        }
+        targetSelect.value = "multiple";
+      } else {
+        // Enable dropdown select
+        targetSelect.disabled = false;
+        const optMultiple = document.getElementById("opt-multiple");
+        if (optMultiple) {
+          optMultiple.remove();
+        }
+        
+        // Restore targetSelect value
+        targetSelect.value = activeTargetKey;
+        
+        // Restore single model visibility and resets
+        Object.keys(targetsMap).forEach(k => {
+          targetsMap[k].model.visible = (k === activeTargetKey);
+          targetsMap[k].model.position.set(0, 0, 0);
+          targetsMap[k].model.rotation.y = 0;
+          
+          const bbox = targetsMap[k].model.getObjectByName("TargetBoundingBox");
+          const brackets = targetsMap[k].model.getObjectByName("TargetBrackets");
+          if (bbox) bbox.visible = true;
+          if (brackets) brackets.visible = true;
+        });
       }
     });
   });
@@ -830,7 +916,6 @@ function setupEventListeners() {
   });
 
   // Target Class Dropdown listener
-  const targetSelect = document.getElementById("target-type-select");
   targetSelect.addEventListener('change', (e) => {
     const key = e.target.value;
     activeTargetKey = key;
