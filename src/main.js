@@ -785,7 +785,7 @@ function setupEventListeners() {
   });
 
   // Camera Presets
-  const cams = ["orbit", "radar", "morts", "mirror"];
+  const cams = ["orbit", "radar", "morts-left", "morts-right", "mirror-left", "mirror-right"];
   cams.forEach(c => {
     const btn = document.getElementById(`cam-${c}`);
     btn.addEventListener('click', () => {
@@ -934,17 +934,29 @@ function switchCameraPreset(name) {
       controls.enabled = false; // Disable orbit control rotation to keep orthographic feel
       break;
 
-    case "morts":
-      // Side cab blind spot perspective
+    case "morts-left":
+      // Left side cab blind spot perspective
       camera.position.set(-7.5 * distanceScale, 3.5 * distanceScale, 5.0 * distanceScale);
       controls.target.set(-1.8, 1.0, 1.8);
       break;
 
-    case "mirror":
-      // Driver left rearview mirror perspective looking backwards
-      // Mirror position is approximately (-1.7, 2.4, 2.8) on Lorry mirror
+    case "morts-right":
+      // Right side cab blind spot perspective
+      camera.position.set(7.5 * distanceScale, 3.5 * distanceScale, 5.0 * distanceScale);
+      controls.target.set(1.8, 1.0, 1.8);
+      break;
+
+    case "mirror-left":
+      // Passenger left rearview mirror perspective looking backwards
       camera.position.set(-1.75, 2.38, 2.7);
       controls.target.set(-5.5, 1.2, -6.0); // look backward down the left side lane
+      controls.enabled = false; // lock rotation to mirror angle
+      break;
+
+    case "mirror-right":
+      // Driver right rearview mirror perspective looking backwards
+      camera.position.set(1.75, 2.38, 2.7);
+      controls.target.set(5.5, 1.2, -6.0); // look backward down the right side lane
       controls.enabled = false; // lock rotation to mirror angle
       break;
   }
